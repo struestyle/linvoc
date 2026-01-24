@@ -49,7 +49,7 @@ Sur les distributions Linux modernes, Python protège son système (norme PEP 66
 
 ```bash
 # Cloner le dépôt et entrer dedans
-git clone https://github.com/louis/linvoc.git
+git clone https://github.com/struestyle/linvoc.git
 cd linvoc
 
 # Créer un environnement virtuel
@@ -63,7 +63,7 @@ pip install -e .
 ```
 
 > [!NOTE]
-> Bien que Python soit un langage interprété, `pip` génère automatiquement un script "wrapper" (un binaire de lancement) nommé `linvoc` dans le dossier `.venv/bin/`. C'est ce fichier que nous utiliserons pour lancer l'application.
+> Cette commande installe automatiquement toutes les dépendances nécessaires, y compris `nerd-dictation`, `vosk` et `PySide6`. `pip` génère également un script "wrapper" nommé `linvoc` dans le dossier `.venv/bin/`.
 
 ### 3. Téléchargement du modèle vocal (Vosk)
 
