@@ -45,30 +45,36 @@ sudo pacman -S xdotool ydotool wl-clipboard
 
 ### 2. Installation de linvoc
 
-Il est recommandé d'utiliser un environnement virtuel.
+Sur les distributions Linux modernes, Python protège son système (norme PEP 668). Vous **devez** utiliser un environnement virtuel pour installer des paquets proprement.
 
 ```bash
-# Cloner le dépôt
+# Cloner le dépôt et entrer dedans
 git clone https://github.com/louis/linvoc.git
 cd linvoc
 
-# Installer linvoc et ses dépendances Python
+# Créer un environnement virtuel
+python3 -m venv .venv
+
+# Activer l'environnement
+source .venv/bin/activate
+
+# Installer linvoc en mode éditable
 pip install -e .
 ```
 
 > [!NOTE]
-> Cette commande installe également `nerd-dictation` et `PySide6`. Si la commande `linvoc` n'est pas reconnue après l'installation, assurez-vous que le dossier `bin` de votre environnement Python est dans votre `PATH`.
+> Bien que Python soit un langage interprété, `pip` génère automatiquement un script "wrapper" (un binaire de lancement) nommé `linvoc` dans le dossier `.venv/bin/`. C'est ce fichier que nous utiliserons pour lancer l'application.
 
 ### 3. Téléchargement du modèle vocal (Vosk)
 
-`nerd-dictation` nécessite un modèle Vosk pour fonctionner en mode hors-ligne.
+`nerd-dictation` nécessite un modèle Vosk pour fonctionner hors-ligne.
 
 ```bash
 # Créer le dossier de configuration
 mkdir -p ~/.config/nerd-dictation
 cd ~/.config/nerd-dictation
 
-# Télécharger le modèle français (petit et efficace)
+# Télécharger et extraire le modèle français
 wget https://alphacephei.com/vosk/models/vosk-model-small-fr-0.22.zip
 unzip vosk-model-small-fr-0.22.zip
 mv vosk-model-small-fr-0.22 model
@@ -77,44 +83,46 @@ rm vosk-model-small-fr-0.22.zip
 
 ## 🚀 Utilisation
 
-### Lancement
+### Lancement direct
 
-Si vous avez installé le package avec `pip install -e .`, vous pouvez lancer :
+Depuis le dossier du projet, avec l'environnement virtuel activé :
 
 ```bash
 linvoc                # Lancement standard
-linvoc --lang en      # Si vous avez un modèle anglais dans ~/.config/nerd-dictation/model-en
+linvoc --lang en      # Si vous avez un modèle anglais
 linvoc --check        # Vérification des dépendances
 ```
 
 > [!TIP]
-> Si la commande `linvoc` n'est pas trouvée, vous pouvez tester avec :
-> `python3 -m src.main`
+> Si l'environnement n'est pas activé, vous pouvez toujours lancer :
+> `./.venv/bin/linvoc` ou `python3 -m src.main`
 
 ### Fonctionnement
 
 1. **Positionnez** votre curseur dans un champ texte.
 2. **Lancez** linvoc (via terminal ou raccourci clavier).
-3. **Appuyez sur Espace** ou cliquez sur le micro pour démarrer la dictée.
-4. **Parlez** ! Le micro devient rouge pour indiquer l'écoute.
-5. **Appuyez sur Espace** à nouveau pour arrêter : le texte est automatiquement injecté.
+3. **Appuyez sur Espace** pour démarrer.
+4. **Parlez** (le micro devient rouge).
+5. **Appuyez sur Espace** à nouveau : le texte est injecté.
 
-### Raccourcis clavier (dans la fenêtre)
+## ⌨️ Raccourci Clavier Global (Le plus pratique)
 
-| Touche | Action |
-|--------|--------|
-| `Espace` | Démarrer / Arrêter la dictée |
-| `Échap` | Annuler et fermer l'application |
+Pour utiliser `linvoc` comme un vrai outil système (similaire à Win+H), créez un raccourci clavier global dans vos paramètres système (ex: `Super+H`).
 
-## ⚙️ Configuration du raccourci global
+### Commande à utiliser :
+Vous devez pointer directement vers le lanceur dans votre environnement virtuel :
+```bash
+/chemin/complet/vers/linvoc/.venv/bin/linvoc --start
+```
 
-Pour une expérience optimale, créez un raccourci clavier système (ex: `Super+H`).
+> [!TIP]
+> L'argument `--start` permet de lancer l'application et de commencer l'écoute immédiatement, ce qui rend l'expérience beaucoup plus fluide.
 
-### KDE Plasma
-**Paramètres** → **Raccourcis** → **Commandes** : ajouter `linvoc`.
+### Configuration selon votre bureau :
 
-### GNOME
-**Paramètres** → **Clavier** → **Raccourcis personnalisés** : ajouter une commande `linvoc`.
+- **KDE Plasma** : Paramètres → Raccourcis → Commandes → Ajouter.
+- **GNOME** : Paramètres → Clavier → Raccourcis personnalisés → Ajouter (+).
+- **XFCE** : Paramètres → Clavier → Raccourcis d'applications → Ajouter.
 
 ## 🔧 Dépannage
 
