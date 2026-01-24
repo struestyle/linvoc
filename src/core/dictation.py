@@ -127,6 +127,7 @@ class DictationManager:
             return False
 
         cmd = [
+            sys.executable,
             nerd_dictation_path,
             "begin",
             "--vosk-model-dir", model_path,
