@@ -5,6 +5,7 @@ import shutil
 from typing import Optional
 
 from ..core.text_injector import TextInjectorBackend
+from ..core.environment import EnvironmentDetector
 
 
 class YdotoolBackend(TextInjectorBackend):
@@ -17,7 +18,8 @@ class YdotoolBackend(TextInjectorBackend):
 
     def __init__(self):
         """Initialise le backend ydotool."""
-        self._ydotool_path: Optional[str] = shutil.which("ydotool")
+        self._ydotool_path: Optional[str] = EnvironmentDetector.get_executable_path("ydotool")
+        self._pgrep_path: Optional[str] = EnvironmentDetector.get_executable_path("pgrep")
 
     @property
     def name(self) -> str:
@@ -45,8 +47,9 @@ class YdotoolBackend(TextInjectorBackend):
             bool: True si le daemon est actif
         """
         try:
+            pgrep = self._pgrep_path or "pgrep"
             result = subprocess.run(
-                ["pgrep", "-x", "ydotoold"],
+                [pgrep, "-x", "ydotoold"],
                 capture_output=True,
                 timeout=5,
             )
@@ -74,7 +77,7 @@ class YdotoolBackend(TextInjectorBackend):
             # ydotool type avec délai entre caractères
             result = subprocess.run(
                 [
-                    "ydotool",
+                    self._ydotool_path,
                     "type",
                     "--key-delay", "12",  # Délai en ms
                     "--", text

@@ -10,6 +10,8 @@ import sys
 from typing import Optional, Callable
 from enum import Enum
 
+from .environment import EnvironmentDetector
+
 
 class DictationState(Enum):
     """État du gestionnaire de dictée."""
@@ -117,8 +119,15 @@ class DictationManager:
             return False
         
         model_path = self.get_model_path()
+        nerd_dictation_path = EnvironmentDetector.get_executable_path("nerd-dictation")
+        
+        if not nerd_dictation_path:
+            print("ERREUR: nerd-dictation non trouvé")
+            self.state = DictationState.ERROR
+            return False
+
         cmd = [
-            "nerd-dictation",
+            nerd_dictation_path,
             "begin",
             "--vosk-model-dir", model_path,
             "--config", "",  # Ignorer les scripts de config locaux

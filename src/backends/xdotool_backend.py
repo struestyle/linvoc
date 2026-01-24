@@ -53,9 +53,7 @@ class XdotoolBackend(TextInjectorBackend):
             # Utiliser xdotool type avec un délai entre les caractères
             # pour une meilleure compatibilité
             result = subprocess.run(
-                [
-                    "xdotool",
-                    "type",
+                [self._xdotool_path, "type",
                     "--clearmodifiers",  # Libérer les modificateurs (Ctrl, Alt, etc.)
                     "--delay", "12",      # Délai entre caractères (ms)
                     "--", text
@@ -85,7 +83,7 @@ class XdotoolBackend(TextInjectorBackend):
         
         try:
             result = subprocess.run(
-                ["xdotool", "getactivewindow"],
+                [self._xdotool_path, "getactivewindow"],
                 capture_output=True,
                 text=True,
                 timeout=5,
@@ -112,7 +110,7 @@ class XdotoolBackend(TextInjectorBackend):
         
         try:
             result = subprocess.run(
-                ["xdotool", "windowactivate", "--sync", window_id],
+                [self._xdotool_path, "windowactivate", "--sync", window_id],
                 capture_output=True,
                 timeout=5,
             )

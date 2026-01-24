@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import sys
 from enum import Enum
 from typing import Optional
 
@@ -28,6 +29,35 @@ class DesktopEnvironment(Enum):
 
 class EnvironmentDetector:
     """Détecte l'environnement graphique Linux (X11/Wayland, DE)."""
+
+    @staticmethod
+    def get_executable_path(name: str) -> Optional[str]:
+        """
+        Cherche le chemin absolu d'un exécutable.
+        
+        Cherche dans le PATH, puis dans le dossier bin de l'exécutable Python actuel
+        (utile si l'environnement virtuel n'est pas activé dans le shell).
+        
+        Args:
+            name: Nom de l'exécutable
+            
+        Returns:
+            Optional[str]: Chemin absolu ou None
+        """
+        # 1. Chercher dans le PATH standard
+        path = shutil.which(name)
+        if path:
+            return path
+            
+        # 2. Chercher dans le dossier bin de l'environnement actuel
+        # sys.executable pointe vers .venv/bin/python ou /usr/bin/python
+        venv_bin_dir = os.path.dirname(sys.executable)
+        local_path = shutil.which(name, path=venv_bin_dir)
+        if local_path:
+            return local_path
+            
+        return None
+
 
     @staticmethod
     def get_session_type() -> SessionType:
@@ -108,17 +138,17 @@ class EnvironmentDetector:
     @staticmethod
     def has_xdotool() -> bool:
         """Vérifie si xdotool est installé."""
-        return shutil.which("xdotool") is not None
+        return EnvironmentDetector.get_executable_path("xdotool") is not None
 
     @staticmethod
     def has_ydotool() -> bool:
         """Vérifie si ydotool est installé."""
-        return shutil.which("ydotool") is not None
+        return EnvironmentDetector.get_executable_path("ydotool") is not None
 
     @staticmethod
     def has_nerd_dictation() -> bool:
         """Vérifie si nerd-dictation est installé."""
-        return shutil.which("nerd-dictation") is not None
+        return EnvironmentDetector.get_executable_path("nerd-dictation") is not None
 
     @classmethod
     def get_recommended_backend(cls) -> str:
