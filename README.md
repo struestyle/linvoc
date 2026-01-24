@@ -17,12 +17,11 @@ Application de dictée vocale similaire à Windows (Win+H) pour Linux, compatibl
 
 ## 📦 Installation
 
-### 1. Prérequis système
+L'installation se déroule en trois étapes : les outils système pour l'interaction avec votre bureau, l'environnement Python, et enfin le modèle de reconnaissance vocale.
 
-Selon votre environnement, certains outils sont nécessaires pour l'injection de texte :
+### 1. Dépendances système
 
-- **X11** : `xdotool`
-- **Wayland** : `ydotool` (recommandé) ou `wl-clipboard`
+`linvoc` n'est pas une simple application Python isolée ; elle doit interagir avec votre serveur graphique (X11 ou Wayland) pour simuler des pressions de touches (injection de texte). Pour cela, des outils système natifs sont indispensables.
 
 ```bash
 # Debian / Ubuntu / Mint
@@ -36,48 +35,61 @@ sudo pacman -S xdotool ydotool wl-clipboard
 ```
 
 > [!IMPORTANT]
-> Pour **ydotool**, assurez-vous que le service est actif et que votre utilisateur a les droits :
+> **Pour les utilisateurs de Wayland (GNOME, KDE récent) :**
+> `ydotool` nécessite un démon en arrière-plan. Activez-le ainsi :
 > ```bash
 > sudo systemctl enable --now ydotool
 > sudo usermod -aG ydotool $USER
-> # Redémarrez votre session après l'ajout au groupe.
+> # Redémarrez votre session pour appliquer les changements de groupe.
 > ```
 
 ### 2. Installation de linvoc
+
+Il est recommandé d'utiliser un environnement virtuel.
 
 ```bash
 # Cloner le dépôt
 git clone https://github.com/louis/linvoc.git
 cd linvoc
 
-# Installer en mode éditable (recommandé pour le développement)
+# Installer linvoc et ses dépendances Python
 pip install -e .
 ```
 
-### 3. Configuration de la voix (Vosk)
+> [!NOTE]
+> Cette commande installe également `nerd-dictation` et `PySide6`. Si la commande `linvoc` n'est pas reconnue après l'installation, assurez-vous que le dossier `bin` de votre environnement Python est dans votre `PATH`.
 
-linvoc nécessite [nerd-dictation](https://github.com/ideasman42/nerd-dictation) pour fonctionner.
+### 3. Téléchargement du modèle vocal (Vosk)
+
+`nerd-dictation` nécessite un modèle Vosk pour fonctionner en mode hors-ligne.
 
 ```bash
-# Installation de nerd-dictation
-pip install "git+https://github.com/ideasman42/nerd-dictation.git#subdirectory=package/python"
+# Créer le dossier de configuration
+mkdir -p ~/.config/nerd-dictation
+cd ~/.config/nerd-dictation
 
-# Téléchargement du modèle français (via l'outil intégré)
-nerd-dictation setup-vosk fr
+# Télécharger le modèle français (petit et efficace)
+wget https://alphacephei.com/vosk/models/vosk-model-small-fr-0.22.zip
+unzip vosk-model-small-fr-0.22.zip
+mv vosk-model-small-fr-0.22 model
+rm vosk-model-small-fr-0.22.zip
 ```
 
 ## 🚀 Utilisation
 
 ### Lancement
 
-Une fois installé, vous pouvez lancer linvoc directement depuis votre terminal :
+Si vous avez installé le package avec `pip install -e .`, vous pouvez lancer :
 
 ```bash
-linvoc                # Lance l'interface par défaut
-linvoc --lang en      # Utilise le modèle anglais
-linvoc --check        # Vérifie que tout est correctement installé
-linvoc --info         # Affiche les détails de votre environnement
+linvoc                # Lancement standard
+linvoc --lang en      # Si vous avez un modèle anglais dans ~/.config/nerd-dictation/model-en
+linvoc --check        # Vérification des dépendances
 ```
+
+> [!TIP]
+> Si la commande `linvoc` n'est pas trouvée, vous pouvez tester avec :
+> `python3 -m src.main`
 
 ### Fonctionnement
 
