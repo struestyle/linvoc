@@ -2,7 +2,6 @@
 
 import os
 import signal
-import sys
 import tempfile
 from pathlib import Path
 
@@ -12,13 +11,13 @@ LOCK_FILE = Path(tempfile.gettempdir()) / "linvoc.lock"
 def get_running_pid() -> int | None:
     """
     Retourne le PID de l'instance en cours si elle existe.
-    
+
     Returns:
         int | None: PID si une instance est en cours, None sinon
     """
     if not LOCK_FILE.exists():
         return None
-    
+
     try:
         pid = int(LOCK_FILE.read_text().strip())
         # Vérifie si le processus existe toujours
@@ -43,10 +42,10 @@ def remove_lock():
 def send_toggle_signal(pid: int) -> bool:
     """
     Envoie le signal SIGUSR1 au processus pour toggle la dictée.
-    
+
     Args:
         pid: PID du processus cible
-        
+
     Returns:
         bool: True si le signal a été envoyé avec succès
     """

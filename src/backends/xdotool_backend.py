@@ -10,7 +10,7 @@ from ..core.text_injector import TextInjectorBackend
 class XdotoolBackend(TextInjectorBackend):
     """
     Backend d'injection de texte via xdotool (X11).
-    
+
     Utilise `xdotool type` pour simuler la frappe clavier.
     Fonctionne uniquement sur X11.
     """
@@ -27,7 +27,7 @@ class XdotoolBackend(TextInjectorBackend):
     def is_available(self) -> bool:
         """
         Vérifie si xdotool est installé.
-        
+
         Returns:
             bool: True si xdotool est disponible
         """
@@ -36,19 +36,19 @@ class XdotoolBackend(TextInjectorBackend):
     def inject_text(self, text: str) -> bool:
         """
         Injecte du texte via xdotool type.
-        
+
         Args:
             text: Texte à injecter
-            
+
         Returns:
             bool: True si l'injection a réussi
         """
         if not self.is_available():
             return False
-        
+
         if not text:
             return True  # Rien à faire
-        
+
         try:
             # Utiliser xdotool type avec un délai entre les caractères
             # pour une meilleure compatibilité
@@ -61,59 +61,62 @@ class XdotoolBackend(TextInjectorBackend):
                 capture_output=True,
                 text=True,
                 timeout=30,  # Timeout de 30s
+                check=False,
             )
             return result.returncode == 0
-            
+
         except subprocess.TimeoutExpired:
             print("xdotool: timeout lors de l'injection")
             return False
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError) as e:
             print(f"xdotool: erreur - {e}")
             return False
 
     def get_active_window(self) -> Optional[str]:
         """
         Récupère l'ID de la fenêtre active.
-        
+
         Returns:
             str ou None: ID de la fenêtre active
         """
         if not self.is_available():
             return None
-        
+
         try:
             result = subprocess.run(  # nosec B603
                 [self._xdotool_path, "getactivewindow"],
                 capture_output=True,
                 text=True,
                 timeout=5,
+                check=False,
             )
             if result.returncode == 0:
                 return result.stdout.strip()
         except (subprocess.SubprocessError, OSError):
             pass  # Échec de la commande, retourne None
-        
+
         return None
 
     def focus_window(self, window_id: str) -> bool:
         """
         Donne le focus à une fenêtre.
-        
+
         Args:
             window_id: ID de la fenêtre
-            
+
         Returns:
             bool: True si succès
         """
         if not self.is_available():
             return False
-        
+
         try:
             result = subprocess.run(  # nosec B603
                 [self._xdotool_path, "windowactivate", "--sync", window_id],
                 capture_output=True,
                 timeout=5,
+                check=False,
             )
             return result.returncode == 0
-        except Exception:
+        except (OSError, subprocess.SubprocessError):
             return False

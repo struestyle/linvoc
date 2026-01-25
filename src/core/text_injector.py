@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from .environment import EnvironmentDetector, SessionType
+from .environment import EnvironmentDetector
 
 
 class TextInjectorBackend(ABC):
@@ -13,36 +13,33 @@ class TextInjectorBackend(ABC):
     def inject_text(self, text: str) -> bool:
         """
         Injecte du texte dans l'application active.
-        
+
         Args:
             text: Texte à injecter
-            
+
         Returns:
             bool: True si l'injection a réussi
         """
-        pass
 
     @abstractmethod
     def is_available(self) -> bool:
         """
         Vérifie si ce backend est disponible.
-        
+
         Returns:
             bool: True si le backend peut être utilisé
         """
-        pass
 
     @property
     @abstractmethod
     def name(self) -> str:
         """Nom du backend."""
-        pass
 
 
 class TextInjector:
     """
     Factory pour créer le backend d'injection approprié.
-    
+
     Sélectionne automatiquement le meilleur backend selon l'environnement.
     """
 
@@ -52,13 +49,13 @@ class TextInjector:
     def create(cls, force_backend: Optional[str] = None) -> TextInjectorBackend:
         """
         Crée le backend d'injection approprié.
-        
+
         Args:
             force_backend: Forcer un backend spécifique ('xdotool', 'portal', 'ydotool')
-            
+
         Returns:
             TextInjectorBackend: Backend configuré
-            
+
         Raises:
             RuntimeError: Si aucun backend n'est disponible
         """
@@ -84,7 +81,7 @@ class TextInjector:
 
         # Sélection automatique basée sur l'environnement
         recommended = EnvironmentDetector.get_recommended_backend()
-        
+
         # Ordre de priorité selon la recommandation
         if recommended == "portal":
             priority = [PortalBackend, XdotoolBackend, YdotoolBackend]
@@ -102,8 +99,8 @@ class TextInjector:
                 if backend.is_available():
                     cls._instance = backend
                     return backend
-            except Exception:  # nosec B112 - fallback voulu
-                continue  # Backend non disponible, essayer le suivant
+            except (ImportError, OSError, RuntimeError):  # Backend non disponible
+                continue  # Essayer le suivant
 
         raise RuntimeError(
             "Aucun backend d'injection de texte disponible. "
@@ -114,7 +111,7 @@ class TextInjector:
     def get_instance(cls) -> TextInjectorBackend:
         """
         Retourne l'instance actuelle ou en crée une nouvelle.
-        
+
         Returns:
             TextInjectorBackend: Backend configuré
         """
@@ -126,10 +123,10 @@ class TextInjector:
     def inject(cls, text: str) -> bool:
         """
         Raccourci pour injecter du texte.
-        
+
         Args:
             text: Texte à injecter
-            
+
         Returns:
             bool: True si succès
         """

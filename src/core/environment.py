@@ -34,13 +34,13 @@ class EnvironmentDetector:
     def get_executable_path(name: str) -> Optional[str]:
         """
         Cherche le chemin absolu d'un exécutable.
-        
+
         Cherche dans le PATH, puis dans le dossier bin de l'exécutable Python actuel
         (utile si l'environnement virtuel n'est pas activé dans le shell).
-        
+
         Args:
             name: Nom de l'exécutable
-            
+
         Returns:
             Optional[str]: Chemin absolu ou None
         """
@@ -48,14 +48,14 @@ class EnvironmentDetector:
         path = shutil.which(name)
         if path:
             return path
-            
+
         # 2. Chercher dans le dossier bin de l'environnement actuel
         # sys.executable pointe vers .venv/bin/python ou /usr/bin/python
         venv_bin_dir = os.path.dirname(sys.executable)
         local_path = shutil.which(name, path=venv_bin_dir)
         if local_path:
             return local_path
-            
+
         return None
 
 
@@ -63,64 +63,64 @@ class EnvironmentDetector:
     def get_session_type() -> SessionType:
         """
         Détecte le type de session graphique.
-        
+
         Returns:
             SessionType: X11, WAYLAND ou UNKNOWN
         """
         # Vérifier $XDG_SESSION_TYPE en priorité
         session_type = os.environ.get("XDG_SESSION_TYPE", "").lower()
-        
+
         if session_type == "wayland":
             return SessionType.WAYLAND
-        elif session_type == "x11":
+        if session_type == "x11":
             return SessionType.X11
-        
+
         # Fallback: vérifier les variables d'affichage
         if os.environ.get("WAYLAND_DISPLAY"):
             return SessionType.WAYLAND
-        elif os.environ.get("DISPLAY"):
+        if os.environ.get("DISPLAY"):
             return SessionType.X11
-        
+
         return SessionType.UNKNOWN
 
     @staticmethod
     def get_desktop_environment() -> DesktopEnvironment:
         """
         Détecte l'environnement de bureau.
-        
+
         Returns:
             DesktopEnvironment: Le DE détecté
         """
         desktop = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
         session = os.environ.get("DESKTOP_SESSION", "").lower()
-        
+
         # Combiner les deux sources
         combined = f"{desktop} {session}"
-        
+
         if "gnome" in combined:
             return DesktopEnvironment.GNOME
-        elif "kde" in combined or "plasma" in combined:
+        if "kde" in combined or "plasma" in combined:
             return DesktopEnvironment.KDE
-        elif "xfce" in combined:
+        if "xfce" in combined:
             return DesktopEnvironment.XFCE
-        elif "cinnamon" in combined:
+        if "cinnamon" in combined:
             return DesktopEnvironment.CINNAMON
-        elif "mate" in combined:
+        if "mate" in combined:
             return DesktopEnvironment.MATE
-        elif "lxqt" in combined:
+        if "lxqt" in combined:
             return DesktopEnvironment.LXQT
-        elif "hyprland" in combined:
+        if "hyprland" in combined:
             return DesktopEnvironment.HYPRLAND
-        elif "sway" in combined:
+        if "sway" in combined:
             return DesktopEnvironment.SWAY
-        
+
         return DesktopEnvironment.UNKNOWN
 
     @staticmethod
     def has_portal_support() -> bool:
         """
         Vérifie si XDG Desktop Portal est disponible.
-        
+
         Returns:
             bool: True si le portail est disponible
         """
@@ -132,7 +132,7 @@ class EnvironmentDetector:
                 "/org/freedesktop/portal/desktop"
             )
             return True
-        except Exception:
+        except (ImportError, OSError, AttributeError):
             return False
 
     @staticmethod
@@ -154,39 +154,39 @@ class EnvironmentDetector:
     def get_recommended_backend(cls) -> str:
         """
         Retourne le backend d'injection de texte recommandé.
-        
+
         Returns:
             str: 'portal', 'xdotool', 'ydotool' ou 'none'
         """
         session = cls.get_session_type()
-        
+
         # Sur Wayland, préférer Portal > ydotool
         if session == SessionType.WAYLAND:
             if cls.has_portal_support():
                 return "portal"
-            elif cls.has_ydotool():
+            if cls.has_ydotool():
                 return "ydotool"
-        
+
         # Sur X11, préférer xdotool
         if session == SessionType.X11:
             if cls.has_xdotool():
                 return "xdotool"
-        
+
         # Fallbacks génériques
         if cls.has_portal_support():
             return "portal"
-        elif cls.has_xdotool():
+        if cls.has_xdotool():
             return "xdotool"
-        elif cls.has_ydotool():
+        if cls.has_ydotool():
             return "ydotool"
-        
+
         return "none"
 
     @classmethod
     def get_environment_info(cls) -> dict:
         """
         Retourne un dictionnaire avec toutes les infos d'environnement.
-        
+
         Returns:
             dict: Informations complètes sur l'environnement
         """

@@ -36,10 +36,10 @@ class Styles:
     def get_theme_colors(cls, dark_mode: bool = True) -> Dict[str, str]:
         """
         Retourne les couleurs du thème.
-        
+
         Args:
             dark_mode: True pour le thème sombre
-            
+
         Returns:
             dict: Couleurs du thème
         """
@@ -49,28 +49,28 @@ class Styles:
     def get_widget_style(cls, dark_mode: bool = True) -> str:
         """
         Retourne le QSS pour le widget principal.
-        
+
         Args:
             dark_mode: True pour le thème sombre
-            
+
         Returns:
             str: Feuille de style QSS
         """
         colors = cls.get_theme_colors(dark_mode)
-        
+
         return f"""
             QWidget#MicrophoneWidget {{
                 background-color: {colors['surface']};
                 border: 2px solid {colors['border']};
                 border-radius: 16px;
             }}
-            
+
             QLabel#StatusLabel {{
                 color: {colors['text_muted']};
                 font-size: 10px;
                 font-weight: 500;
             }}
-            
+
             QLabel#MicIcon {{
                 color: {colors['text']};
             }}
@@ -80,28 +80,28 @@ class Styles:
     def get_recording_style(cls, dark_mode: bool = True) -> str:
         """
         Retourne le QSS pour l'état enregistrement.
-        
+
         Args:
             dark_mode: True pour le thème sombre
-            
+
         Returns:
             str: Feuille de style QSS
         """
         colors = cls.get_theme_colors(dark_mode)
-        
+
         return f"""
             QWidget#MicrophoneWidget {{
                 background-color: {colors['surface']};
                 border: 2px solid {colors['recording']};
                 border-radius: 16px;
             }}
-            
+
             QLabel#StatusLabel {{
                 color: {colors['recording']};
                 font-size: 10px;
                 font-weight: 600;
             }}
-            
+
             QLabel#MicIcon {{
                 color: {colors['recording']};
             }}
@@ -111,22 +111,22 @@ class Styles:
     def get_processing_style(cls, dark_mode: bool = True) -> str:
         """
         Retourne le QSS pour l'état traitement.
-        
+
         Args:
             dark_mode: True pour le thème sombre
-            
+
         Returns:
             str: Feuille de style QSS
         """
         colors = cls.get_theme_colors(dark_mode)
-        
+
         return f"""
             QWidget#MicrophoneWidget {{
                 background-color: {colors['surface']};
                 border: 2px solid {colors['primary']};
                 border-radius: 16px;
             }}
-            
+
             QLabel#StatusLabel {{
                 color: {colors['primary']};
                 font-size: 10px;
@@ -138,22 +138,22 @@ class Styles:
     def get_error_style(cls, dark_mode: bool = True) -> str:
         """
         Retourne le QSS pour l'état erreur.
-        
+
         Args:
             dark_mode: True pour le thème sombre
-            
+
         Returns:
             str: Feuille de style QSS
         """
         colors = cls.get_theme_colors(dark_mode)
-        
+
         return f"""
             QWidget#MicrophoneWidget {{
                 background-color: {colors['surface']};
                 border: 2px solid {colors['warning']};
                 border-radius: 16px;
             }}
-            
+
             QLabel#StatusLabel {{
                 color: {colors['warning']};
                 font-size: 10px;
