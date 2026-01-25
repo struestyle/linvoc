@@ -1,6 +1,6 @@
 """Backend Wayland utilisant ydotool pour l'injection de texte."""
 
-import subprocess
+import subprocess  # nosec B404 - nécessaire pour ydotool
 import shutil
 from typing import Optional
 
@@ -48,7 +48,7 @@ class YdotoolBackend(TextInjectorBackend):
         """
         try:
             pgrep = self._pgrep_path or "pgrep"
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 [pgrep, "-x", "ydotoold"],
                 capture_output=True,
                 timeout=5,
@@ -75,7 +75,7 @@ class YdotoolBackend(TextInjectorBackend):
         
         try:
             # ydotool type avec délai entre caractères
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 [
                     self._ydotool_path,
                     "type",

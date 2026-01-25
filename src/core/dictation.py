@@ -1,6 +1,6 @@
 """Gestionnaire de dictée vocale via nerd-dictation."""
 
-import subprocess
+import subprocess  # nosec B404 - nécessaire pour nerd-dictation
 import threading
 import queue
 import signal
@@ -138,7 +138,7 @@ class DictationManager:
         ]
         
         try:
-            self._process = subprocess.Popen(
+            self._process = subprocess.Popen(  # nosec B603
                 cmd,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL, # Retour au silence pour la vie privée
@@ -164,8 +164,10 @@ class DictationManager:
                 self._process.terminate()
                 self._process.wait(timeout=2)
             except Exception:
-                try: self._process.kill()
-                except: pass
+                try:
+                    self._process.kill()
+                except (ProcessLookupError, OSError):
+                    pass  # Processus déjà terminé
             finally:
                 self._process = None
         

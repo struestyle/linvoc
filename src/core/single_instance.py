@@ -3,9 +3,10 @@
 import os
 import signal
 import sys
+import tempfile
 from pathlib import Path
 
-LOCK_FILE = Path("/tmp/linvoc.lock")
+LOCK_FILE = Path(tempfile.gettempdir()) / "linvoc.lock"
 
 
 def get_running_pid() -> int | None:

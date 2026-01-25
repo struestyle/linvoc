@@ -1,6 +1,6 @@
 """Backend X11 utilisant xdotool pour l'injection de texte."""
 
-import subprocess
+import subprocess  # nosec B404 - nécessaire pour xdotool
 import shutil
 from typing import Optional
 
@@ -52,7 +52,7 @@ class XdotoolBackend(TextInjectorBackend):
         try:
             # Utiliser xdotool type avec un délai entre les caractères
             # pour une meilleure compatibilité
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 [self._xdotool_path, "type",
                     "--clearmodifiers",  # Libérer les modificateurs (Ctrl, Alt, etc.)
                     "--delay", "12",      # Délai entre caractères (ms)
@@ -82,7 +82,7 @@ class XdotoolBackend(TextInjectorBackend):
             return None
         
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 [self._xdotool_path, "getactivewindow"],
                 capture_output=True,
                 text=True,
@@ -90,8 +90,8 @@ class XdotoolBackend(TextInjectorBackend):
             )
             if result.returncode == 0:
                 return result.stdout.strip()
-        except Exception:
-            pass
+        except (subprocess.SubprocessError, OSError):
+            pass  # Échec de la commande, retourne None
         
         return None
 
@@ -109,7 +109,7 @@ class XdotoolBackend(TextInjectorBackend):
             return False
         
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 [self._xdotool_path, "windowactivate", "--sync", window_id],
                 capture_output=True,
                 timeout=5,

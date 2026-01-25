@@ -58,8 +58,8 @@ class MicrophoneWidget(QWidget):
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(5)
+        layout.setContentsMargins(10, 25, 10, 10)
+        layout.setSpacing(2)
         
         # Bouton fermer en haut à droite
         self._close_btn = QLabel(self)
@@ -73,17 +73,18 @@ class MicrophoneWidget(QWidget):
         # Icône centrale (SVG)
         self._icon_label = QLabel()
         self._icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._icon_label.setFixedSize(48, 48)
+        self._icon_label.setFixedSize(40, 40)
         
         self._status_label = QLabel("DICTÉE")
         self._status_label.setObjectName("StatusLabel")
         self._status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._status_label.setContentsMargins(0, 0, 0, 0)
         
         font = QFont("Sans Serif", 9, QFont.Weight.Bold)
         self._status_label.setFont(font)
         
-        layout.addWidget(self._icon_label, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self._status_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self._icon_label, alignment=Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom)
+        layout.addWidget(self._status_label, alignment=Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
 
     def _render_svg_to_label(self, label: QLabel, icon_name: str, color: QColor, size: int):
         """Affiche un SVG dans un label spécifique avec une couleur et taille données."""
@@ -133,19 +134,19 @@ class MicrophoneWidget(QWidget):
         if state == DictationState.RECORDING:
             style = Styles.get_recording_style(self._dark_mode)
             self._status_label.setText("ÉCOUTE")
-            self._render_svg_to_label(self._icon_label, "microphone_on", QColor(colors['recording']), 48)
+            self._render_svg_to_label(self._icon_label, "microphone_on", QColor(colors['recording']), 40)
         elif state == DictationState.PROCESSING:
             style = Styles.get_processing_style(self._dark_mode)
             self._status_label.setText("VOSK...")
-            self._render_svg_to_label(self._icon_label, "spinner", QColor(colors['primary']), 48)
+            self._render_svg_to_label(self._icon_label, "spinner", QColor(colors['primary']), 40)
         elif state == DictationState.ERROR:
             style = Styles.get_error_style(self._dark_mode)
             self._status_label.setText("ERREUR")
-            self._render_svg_to_label(self._icon_label, "warning", QColor(colors['warning']), 48)
+            self._render_svg_to_label(self._icon_label, "warning", QColor(colors['warning']), 40)
         else:
             style = Styles.get_widget_style(self._dark_mode)
             self._status_label.setText("DICTÉE")
-            self._render_svg_to_label(self._icon_label, "microphone", QColor(colors['text']), 48)
+            self._render_svg_to_label(self._icon_label, "microphone", QColor(colors['text']), 40)
         
         self.setStyleSheet(style)
         self.update()

@@ -1,6 +1,6 @@
 """Backend XDG Desktop Portal pour l'injection de texte (Wayland)."""
 
-import subprocess
+import subprocess  # nosec B404 - nécessaire pour les outils CLI
 from typing import Optional
 
 from ..core.text_injector import TextInjectorBackend
@@ -58,7 +58,7 @@ class PortalBackend(TextInjectorBackend):
         """
         try:
             # Utiliser xclip ou wl-paste selon l'environnement
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 B607
                 ["wl-paste", "--no-newline"],
                 capture_output=True,
                 text=True,
@@ -66,12 +66,12 @@ class PortalBackend(TextInjectorBackend):
             )
             if result.returncode == 0:
                 return result.stdout
-        except Exception:
+        except Exception:  # nosec B110 - fallback voulu
             pass
         
         # Fallback xclip (X11/XWayland)
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 B607
                 ["xclip", "-selection", "clipboard", "-o"],
                 capture_output=True,
                 text=True,
@@ -79,7 +79,7 @@ class PortalBackend(TextInjectorBackend):
             )
             if result.returncode == 0:
                 return result.stdout
-        except Exception:
+        except Exception:  # nosec B110 - fallback voulu
             pass
         
         return None
@@ -96,7 +96,7 @@ class PortalBackend(TextInjectorBackend):
         
         try:
             # wl-copy pour Wayland
-            subprocess.run(
+            subprocess.run(  # nosec B603 B607
                 ["wl-copy", "--"],
                 input=content,
                 text=True,
@@ -105,13 +105,13 @@ class PortalBackend(TextInjectorBackend):
         except Exception:
             # Fallback xclip
             try:
-                subprocess.run(
+                subprocess.run(  # nosec B603 B607
                     ["xclip", "-selection", "clipboard"],
                     input=content,
                     text=True,
                     timeout=5,
                 )
-            except Exception:
+            except Exception:  # nosec B110 - fallback voulu
                 pass
 
     def _set_clipboard(self, text: str) -> bool:
@@ -126,7 +126,7 @@ class PortalBackend(TextInjectorBackend):
         """
         # Essayer wl-copy d'abord (Wayland natif)
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 B607
                 ["wl-copy", "--"],
                 input=text,
                 text=True,
@@ -134,12 +134,12 @@ class PortalBackend(TextInjectorBackend):
             )
             if result.returncode == 0:
                 return True
-        except Exception:
+        except Exception:  # nosec B110 - fallback voulu
             pass
         
         # Fallback xclip
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 B607
                 ["xclip", "-selection", "clipboard"],
                 input=text,
                 text=True,
@@ -158,31 +158,31 @@ class PortalBackend(TextInjectorBackend):
         """
         # Essayer ydotool d'abord (Wayland)
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 B607
                 ["ydotool", "key", "29:1", "47:1", "47:0", "29:0"],  # Ctrl+V
                 capture_output=True,
                 timeout=5,
             )
             if result.returncode == 0:
                 return True
-        except Exception:
+        except Exception:  # nosec B110 - fallback voulu
             pass
         
         # Fallback wtype
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 B607
                 ["wtype", "-M", "ctrl", "-k", "v", "-m", "ctrl"],
                 capture_output=True,
                 timeout=5,
             )
             if result.returncode == 0:
                 return True
-        except Exception:
+        except Exception:  # nosec B110 - fallback voulu
             pass
         
         # Fallback xdotool (X11/XWayland)
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 B607
                 ["xdotool", "key", "--clearmodifiers", "ctrl+v"],
                 capture_output=True,
                 timeout=5,

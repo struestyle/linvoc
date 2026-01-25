@@ -102,8 +102,8 @@ class TextInjector:
                 if backend.is_available():
                     cls._instance = backend
                     return backend
-            except Exception:
-                continue
+            except Exception:  # nosec B112 - fallback voulu
+                continue  # Backend non disponible, essayer le suivant
 
         raise RuntimeError(
             "Aucun backend d'injection de texte disponible. "
