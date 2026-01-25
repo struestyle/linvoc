@@ -220,9 +220,9 @@ class MicrophoneWidget(QWidget):
 
     def closeEvent(self, event):
         """Arrête proprement la dictée et les threads à la fermeture."""
-        if self._dictation.state == DictationState.RECORDING:
-            self._dictation.stop()
+        self._dictation.stop()
         event.accept()
+        QApplication.quit()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:
