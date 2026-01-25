@@ -1,0 +1,24 @@
+[MAIN]
+# Ignorer les modules non installés dans l'environnement de test
+ignored-modules=PySide6,PySide6.QtWidgets,PySide6.QtCore,PySide6.QtGui,PySide6.QtSvg,dbus
+
+[MESSAGES CONTROL]
+# Désactiver les faux positifs et les issues acceptables
+disable=
+    import-error,
+    invalid-name,
+    too-many-instance-attributes,
+    too-many-return-statements,
+    import-outside-toplevel,
+    duplicate-code,
+    cyclic-import,
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+
+[FORMAT]
+max-line-length=100
+
+[DESIGN]
+max-args=7
+max-attributes=12
