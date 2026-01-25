@@ -144,8 +144,18 @@ Exemples:
         print("\nUtilisez --check pour plus de détails.")
         return 1
     
-    # Lancer l'application
-    app = LinvocApplication(start_immediately=args.start)
+    # Vérifier si une instance est déjà en cours
+    from .core.single_instance import get_running_pid, send_toggle_signal
+    existing_pid = get_running_pid()
+    
+    if existing_pid:
+        # Instance existante : envoyer le signal toggle
+        if send_toggle_signal(existing_pid):
+            return 0
+        # Si échec, continuer et lancer une nouvelle instance
+    
+    # Lancer l'application (toujours avec start_immediately=True pour le workflow toggle)
+    app = LinvocApplication(start_immediately=True)
     return app.run()
 
 

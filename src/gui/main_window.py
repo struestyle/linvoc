@@ -237,10 +237,16 @@ class LinvocApplication:
         self._app.setQuitOnLastWindowClosed(True)
         self._widget = MicrophoneWidget()
         
+        # Créer le fichier lock
+        from ..core.single_instance import create_lock, remove_lock
+        create_lock()
+        self._remove_lock = remove_lock
+        
         # Gestion propre de Ctrl+C et signaux
         import signal
         signal.signal(signal.SIGINT, self.quit)
         signal.signal(signal.SIGTERM, self.quit)
+        signal.signal(signal.SIGUSR1, self._on_toggle_signal)
         
         # Timer pour permettre à Python de recevoir les signaux (Qt loop bloque sinon)
         self._timer = QTimer()
@@ -251,8 +257,13 @@ class LinvocApplication:
             # Léger délai pour laisser la fenêtre s'afficher
             QTimer.singleShot(500, self._widget.toggle_recording)
 
+    def _on_toggle_signal(self, signum, frame):
+        """Handler pour SIGUSR1 - toggle la dictée."""
+        self._widget.toggle_recording()
+
     def quit(self, *args):
         print("\nArrêt de l'application...")
+        self._remove_lock()
         if hasattr(self, '_widget'):
             self._widget.close()
         self._app.quit()
