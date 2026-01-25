@@ -67,3 +67,26 @@ ignore_missing_imports = true
 [tool.flake8]
 max-line-length = 100
 exclude = [".git", "__pycache__", "build", "dist"]
+
+[tool.pylint.main]
+# Ignorer les modules non installés dans l'environnement de test
+ignored-modules = ["PySide6", "PySide6.QtWidgets", "PySide6.QtCore", "PySide6.QtGui", "PySide6.QtSvg", "dbus"]
+
+[tool.pylint.messages_control]
+# Désactiver les faux positifs et les issues acceptables
+disable = [
+    "import-error",             # E0401: Dépendances non installées dans Docker
+    "invalid-name",             # C0103: Noms de méthodes Qt (paintEvent, etc.)
+    "too-many-instance-attributes",  # R0902: Classes avec état complexe
+    "too-many-return-statements",    # R0911: Fonctions de détection
+    "import-outside-toplevel",  # C0415: Lazy imports intentionnels
+    "duplicate-code",           # R0801: Code similaire entre backends
+    "cyclic-import",            # R0401: Architecture actuelle
+]
+
+[tool.pylint.format]
+max-line-length = 100
+
+[tool.pylint.design]
+max-args = 7
+max-attributes = 12
