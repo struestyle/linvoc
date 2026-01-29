@@ -1,41 +1,24 @@
-"""Gestionnaire de dictée vocale via nerd-dictation."""
+"""Gestionnaire de dictée vocale unifié."""
 
-import subprocess  # nosec B404 - nécessaire pour nerd-dictation
-import threading
-import queue
-import os
-import sys
 from typing import Optional, Callable
-from enum import Enum
 
-from .environment import EnvironmentDetector
-
-
-class DictationState(Enum):
-    """État du gestionnaire de dictée."""
-    IDLE = "idle"
-    RECORDING = "recording"
-    PROCESSING = "processing"
-    ERROR = "error"
+from .engine_base import SpeechEngine, EngineType, DictationState
 
 
 class DictationManager:
     """
-    Gère l'interaction avec nerd-dictation en subprocess.
+    Gestionnaire unifié des moteurs de reconnaissance vocale.
 
-    Utilise nerd-dictation pour la reconnaissance vocale offline via Vosk.
+    Fournit une interface unifiée pour utiliser VOSK ou Whisper
+    comme moteur de reconnaissance vocale.
     """
-
-    # Chemins par défaut des modèles Vosk
-    DEFAULT_MODEL_DIRS = [
-        os.path.expanduser("~/.config/nerd-dictation/model"),
-        os.path.expanduser("~/.local/share/vosk"),
-    ]
 
     def __init__(
         self,
+        engine_type: str = "vosk",
         language: str = "fr",
         model_dir: Optional[str] = None,
+        model_size: str = "base",
         on_text: Optional[Callable[[str], None]] = None,
         on_state_change: Optional[Callable[[DictationState], None]] = None,
     ):
@@ -43,140 +26,104 @@ class DictationManager:
         Initialise le gestionnaire de dictée.
 
         Args:
+            engine_type: Type de moteur ('vosk' ou 'whisper')
             language: Code langue ('fr', 'en', etc.)
-            model_dir: Répertoire spécifique des modèles (optionnel)
+            model_dir: Répertoire spécifique des modèles (optionnel, VOSK uniquement)
+            model_size: Taille du modèle Whisper ('tiny', 'base', 'small', etc.)
             on_text: Callback appelé quand du texte est reconnu
             on_state_change: Callback appelé lors des changements d'état
         """
-        self.language = language
-        self.model_dir = model_dir
-        self.on_text = on_text
+        self._engine_type_str = engine_type
         self.on_state_change = on_state_change
+        self._engine = self._create_engine(
+            engine_type=engine_type,
+            language=language,
+            model_dir=model_dir,
+            model_size=model_size,
+            on_text=on_text,
+            on_state_change=on_state_change,
+        )
 
-        self._process: Optional[subprocess.Popen] = None
-        self._output_queue: queue.Queue = queue.Queue()
-        self._reader_thread: Optional[threading.Thread] = None
-        self._state = DictationState.IDLE
-        self._accumulated_text: list[str] = []
+    def _create_engine(
+        self,
+        engine_type: str,
+        language: str,
+        model_dir: Optional[str],
+        model_size: str,
+        on_text: Optional[Callable[[str], None]],
+        on_state_change: Optional[Callable[[DictationState], None]],
+    ) -> SpeechEngine:
+        """
+        Factory pour créer le moteur approprié.
+
+        Args:
+            engine_type: Type de moteur ('vosk' ou 'whisper')
+            language: Code langue
+            model_dir: Répertoire des modèles (VOSK)
+            model_size: Taille du modèle (Whisper)
+            on_text: Callback texte
+            on_state_change: Callback état
+
+        Returns:
+            SpeechEngine: Instance du moteur
+        """
+        if engine_type == "whisper":
+            from .whisper_engine import WhisperEngine  # pylint: disable=import-outside-toplevel
+            return WhisperEngine(
+                language=language,
+                model_size=model_size,
+                on_text=on_text,
+                on_state_change=on_state_change,
+            )
+        else:
+            from .vosk_engine import VoskEngine  # pylint: disable=import-outside-toplevel
+            return VoskEngine(
+                language=language,
+                model_dir=model_dir,
+                on_text=on_text,
+                on_state_change=on_state_change,
+            )
 
     @property
     def state(self) -> DictationState:
         """État actuel de la dictée."""
-        return self._state
+        return self._engine.state
 
-    @state.setter
-    def state(self, new_state: DictationState):
-        """Change l'état et notifie le callback."""
-        if self._state != new_state:
-            self._state = new_state
-            if self.on_state_change:
-                self.on_state_change(new_state)
+    @property
+    def engine_type(self) -> EngineType:
+        """Type de moteur utilisé."""
+        return self._engine.engine_type
 
-    def get_model_path(self) -> str:
-        """
-        Retourne le chemin du modèle Vosk pour la langue configurée.
-
-        Returns:
-            str: Chemin vers le modèle
-        """
-        # 1. Si un chemin spécifique est fourni
-        if self.model_dir and os.path.isdir(self.model_dir):
-            return self.model_dir
-
-        # 2. Chercher dans les dossiers par défaut
-        for base_dir in self.DEFAULT_MODEL_DIRS:
-            if not os.path.isdir(base_dir):
-                continue
-
-            # Si le dossier est directement le modèle (cas ~/.config/nerd-dictation/model)
-            if "vosk-model" in base_dir or self.language in base_dir:
-                return base_dir
-
-            # Chercher un sous-dossier correspondant à la langue
-            for entry in os.listdir(base_dir):
-                full_path = os.path.join(base_dir, entry)
-                if os.path.isdir(full_path) and self.language in entry.lower():
-                    return full_path
-
-            # Si le dossier contient directement les fichiers du modèle
-            if os.path.exists(os.path.join(base_dir, "am/final.mdl")):
-                return base_dir
-
-        # 3. Fallback: chemin par défaut
-        return os.path.expanduser("~/.config/nerd-dictation/model")
+    @property
+    def engine_type_name(self) -> str:
+        """Nom du type de moteur (pour affichage)."""
+        return self._engine.engine_type.value.upper()
 
     def is_model_available(self) -> bool:
         """Vérifie si le modèle vocal est disponible."""
-        return os.path.isdir(self.get_model_path())
+        return self._engine.is_available()
 
     def start(self) -> bool:
         """
         Démarre l'enregistrement vocal.
+
+        Returns:
+            bool: True si le démarrage a réussi
         """
-        if self._state == DictationState.RECORDING:
-            return False
-
-        model_path = self.get_model_path()
-        nerd_dictation_path = EnvironmentDetector.get_executable_path("nerd-dictation")
-
-        if not nerd_dictation_path:
-            print("ERREUR: nerd-dictation non trouvé")
-            self.state = DictationState.ERROR
-            return False
-
-        cmd = [
-            sys.executable,
-            nerd_dictation_path,
-            "begin",
-            "--vosk-model-dir", model_path,
-            "--config", "",  # Ignorer les scripts de config locaux
-            "--output", "SIMULATE_INPUT",
-            "--simulate-input-tool", "XDOTOOL",
-            "--verbose", "1"
-        ]
-
-        try:
-            self._process = subprocess.Popen(  # nosec B603
-                cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL, # Retour au silence pour la vie privée
-                preexec_fn=os.setsid
-            )
-
-            self.state = DictationState.RECORDING
-            return True
-        except (OSError, subprocess.SubprocessError) as e:
-            print(f"ERREUR Lancement: {e}")
-            self.state = DictationState.ERROR
-            return False
+        return self._engine.start()
 
     def stop(self) -> str:
-        """Arrête proprement le processus."""
-        if self._state != DictationState.RECORDING:
-            return ""
+        """
+        Arrête l'enregistrement vocal.
 
-        self.state = DictationState.PROCESSING
-
-        if self._process:
-            try:
-                self._process.terminate()
-                self._process.wait(timeout=2)
-            except (subprocess.TimeoutExpired, OSError):
-                try:
-                    self._process.kill()
-                except (ProcessLookupError, OSError):
-                    pass  # Processus déjà terminé
-            finally:
-                self._process = None
-
-        self.state = DictationState.IDLE
-        return "" # On ne retourne rien pour la confidentialité
+        Returns:
+            str: Texte reconnu (vide pour la confidentialité)
+        """
+        return self._engine.stop()
 
     def toggle(self) -> Optional[str]:
-        if self._state == DictationState.RECORDING:
-            return self.stop()
-        self.start()
-        return None
+        """Bascule entre démarrage et arrêt."""
+        return self._engine.toggle()
 
 
 # Singleton pour usage global

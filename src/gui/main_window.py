@@ -13,7 +13,8 @@ from PySide6.QtGui import QFont, QPainter, QColor, QPen, QBrush, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 
 from .styles import Styles, ICONS
-from ..core.dictation import DictationManager, DictationState
+from ..core.dictation import DictationManager
+from ..core.engine_base import DictationState
 from ..core.text_injector import TextInjector
 
 
@@ -27,8 +28,17 @@ class MicrophoneWidget(QWidget):
     recording_stopped = Signal(str)
     error_occurred = Signal(str)
 
-    def __init__(self, parent=None):
+    def __init__(
+        self,
+        parent=None,
+        engine_type: str = "vosk",
+        language: str = "fr",
+        model_size: str = "base",
+    ):
         super().__init__(parent)
+        self._engine_type = engine_type
+        self._language = language
+        self._model_size = model_size
 
         self._setup_window()
         self._setup_ui()
@@ -120,7 +130,9 @@ class MicrophoneWidget(QWidget):
 
     def _setup_dictation(self):
         self._dictation = DictationManager(
-            language="fr",
+            engine_type=self._engine_type,
+            language=self._language,
+            model_size=self._model_size,
             on_state_change=self._on_dictation_state_change,
         )
         try:
@@ -150,7 +162,9 @@ class MicrophoneWidget(QWidget):
             )
         elif state == DictationState.PROCESSING:
             style = Styles.get_processing_style(self._dark_mode)
-            self._status_label.setText("VOSK...")
+            # Afficher le nom du moteur actif
+            engine_name = self._dictation.engine_type_name
+            self._status_label.setText(f"{engine_name}...")
             self._render_svg_to_label(
                 self._icon_label, "spinner", QColor(colors['primary']), 40
             )
@@ -235,7 +249,8 @@ class MicrophoneWidget(QWidget):
             self.recording_stopped.emit("")
         else:
             if not self._dictation.start():
-                self.error_occurred.emit("Erreur Vosk")
+                engine_name = self._dictation.engine_type_name
+                self.error_occurred.emit(f"Erreur {engine_name}")
 
     def closeEvent(self, event):
         """Arrête proprement la dictée et les threads à la fermeture."""
@@ -251,10 +266,20 @@ class MicrophoneWidget(QWidget):
 
 
 class LinvocApplication:
-    def __init__(self, start_immediately=False):
+    def __init__(
+        self,
+        start_immediately: bool = False,
+        engine_type: str = "vosk",
+        language: str = "fr",
+        model_size: str = "base",
+    ):
         self._app = QApplication.instance() or QApplication(sys.argv)
         self._app.setQuitOnLastWindowClosed(True)
-        self._widget = MicrophoneWidget()
+        self._widget = MicrophoneWidget(
+            engine_type=engine_type,
+            language=language,
+            model_size=model_size,
+        )
 
         # Créer le fichier lock
         from ..core.single_instance import create_lock, remove_lock

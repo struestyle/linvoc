@@ -150,6 +150,15 @@ class EnvironmentDetector:
         """Vérifie si nerd-dictation est installé."""
         return EnvironmentDetector.get_executable_path("nerd-dictation") is not None
 
+    @staticmethod
+    def has_whisper() -> bool:
+        """Vérifie si pywhispercpp est installé."""
+        try:
+            from pywhispercpp.model import Model  # pylint: disable=import-outside-toplevel,unused-import
+            return True
+        except ImportError:
+            return False
+
     @classmethod
     def get_recommended_backend(cls) -> str:
         """
@@ -197,5 +206,6 @@ class EnvironmentDetector:
             "has_xdotool": cls.has_xdotool(),
             "has_ydotool": cls.has_ydotool(),
             "has_nerd_dictation": cls.has_nerd_dictation(),
+            "has_whisper": cls.has_whisper(),
             "recommended_backend": cls.get_recommended_backend(),
         }

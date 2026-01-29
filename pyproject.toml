@@ -40,6 +40,10 @@ dev = [
     "flake8>=6.0",
     "mypy>=1.0",
 ]
+whisper = [
+    "pywhispercpp>=1.4.0",
+    "PyAudio>=0.2.14",
+]
 
 [project.scripts]
 linvoc = "src.main:main"

@@ -22,14 +22,18 @@ def print_environment_info():
     print(f"XDG Portal: {'✓' if info['has_portal'] else '✗'}")
     print(f"xdotool: {'✓' if info['has_xdotool'] else '✗'}")
     print(f"ydotool: {'✓' if info['has_ydotool'] else '✗'}")
-    print(f"nerd-dictation: {'✓' if info['has_nerd_dictation'] else '✗'}")
+    print(f"nerd-dictation (VOSK): {'✓' if info['has_nerd_dictation'] else '✗'}")
+    print(f"pywhispercpp (Whisper): {'✓' if info['has_whisper'] else '✗'}")
     print(f"Backend recommandé: {info['recommended_backend']}")
     print("============================")
 
 
-def check_dependencies() -> bool:
+def check_dependencies(engine: str = "vosk") -> bool:
     """
     Vérifie que les dépendances sont disponibles.
+
+    Args:
+        engine: Moteur à vérifier ('vosk' ou 'whisper')
 
     Returns:
         bool: True si tout est OK
@@ -38,15 +42,23 @@ def check_dependencies() -> bool:
 
     errors = []
 
-    # Vérifier nerd-dictation
-    if not info['has_nerd_dictation']:
-        errors.append(
-            "nerd-dictation n'est pas installé.\n"
-            "Installation: pip install "
-            "\"git+https://github.com/ideasman42/nerd-dictation.git"
-            "#subdirectory=package/python\"\n"
-            "Modèle: Télécharger et extraire dans ~/.config/nerd-dictation/model"
-        )
+    # Vérifier le moteur de reconnaissance
+    if engine == "whisper":
+        if not info['has_whisper']:
+            errors.append(
+                "pywhispercpp n'est pas installé.\n"
+                "Installation: pip install pywhispercpp PyAudio\n"
+                "Ou: pip install linvoc[whisper]"
+            )
+    else:
+        if not info['has_nerd_dictation']:
+            errors.append(
+                "nerd-dictation n'est pas installé.\n"
+                "Installation: pip install "
+                "\"git+https://github.com/ideasman42/nerd-dictation.git"
+                "#subdirectory=package/python\"\n"
+                "Modèle: Télécharger et extraire dans ~/.config/nerd-dictation/model"
+            )
 
     # Vérifier un backend d'injection
     if info['recommended_backend'] == 'none':
@@ -79,10 +91,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Exemples:
-  linvoc              Lancer l'application
-  linvoc --info       Afficher les infos d'environnement
-  linvoc --check      Vérifier les dépendances
-  linvoc --lang en    Utiliser l'anglais
+  linvoc                    Lancer l'application (moteur VOSK)
+  linvoc --engine whisper   Utiliser Whisper comme moteur
+  linvoc --info             Afficher les infos d'environnement
+  linvoc --check            Vérifier les dépendances
+  linvoc --lang en          Utiliser l'anglais
         """
     )
 
@@ -112,6 +125,20 @@ Exemples:
     )
 
     parser.add_argument(
+        "--engine", "-e",
+        choices=["vosk", "whisper"],
+        default="vosk",
+        help="Moteur de reconnaissance vocale (défaut: vosk)"
+    )
+
+    parser.add_argument(
+        "--model-size", "-m",
+        choices=["tiny", "base", "small", "medium", "large"],
+        default="base",
+        help="Taille du modèle Whisper (défaut: base)"
+    )
+
+    parser.add_argument(
         "--version", "-v",
         action="version",
         version="linvoc 0.1.0"
@@ -134,13 +161,13 @@ Exemples:
     if args.check:
         print_environment_info()
         print()
-        if check_dependencies():
+        if check_dependencies(args.engine):
             print("✓ Toutes les dépendances sont satisfaites.")
             return 0
         return 1
 
     # Vérification rapide des dépendances
-    if not check_dependencies():
+    if not check_dependencies(args.engine):
         print("\nUtilisez --check pour plus de détails.")
         return 1
 
@@ -154,8 +181,13 @@ Exemples:
             return 0
         # Si échec, continuer et lancer une nouvelle instance
 
-    # Lancer l'application (toujours avec start_immediately=True pour le workflow toggle)
-    app = LinvocApplication(start_immediately=True)
+    # Lancer l'application avec le moteur choisi
+    app = LinvocApplication(
+        start_immediately=True,
+        engine_type=args.engine,
+        language=args.lang,
+        model_size=args.model_size,
+    )
     return app.run()
 
 
