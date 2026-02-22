@@ -1,3 +1,4 @@
 #!/bin/bash
 # Launcher script for linvoc - use this for KDE shortcuts
-exec "/home/louis/Documents/Informatique/Développement/linvoc/.venv/bin/linvoc" "$@"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "${SCRIPT_DIR}/.venv/bin/linvoc" "$@"

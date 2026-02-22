@@ -65,7 +65,25 @@ pip install -e .
 > [!NOTE]
 > Cette commande installe automatiquement toutes les dépendances nécessaires, y compris `nerd-dictation`, `vosk` et `PySide6`. `pip` génère également un script "wrapper" nommé `linvoc` dans le dossier `.venv/bin/`.
 
-### 3. Téléchargement du modèle vocal (Vosk)
+### 3. Installation rapide (recommandé)
+
+Le script `install.sh` automatise les étapes 2 ci-dessus et installe la commande `linvoc` dans `~/.local/bin/` pour qu'elle soit accessible depuis n'importe où :
+
+```bash
+git clone https://github.com/struestyle/linvoc.git
+cd linvoc
+./install.sh
+```
+
+Le script effectue automatiquement :
+- Création du venv et installation des dépendances
+- Installation d'un wrapper `linvoc` dans `~/.local/bin/`
+- Vérification que `~/.local/bin` est dans le `PATH`
+
+> [!NOTE]
+> Si `~/.local/bin` n'est pas dans votre `PATH`, le script vous indiquera la ligne à ajouter dans votre `~/.bashrc` ou `~/.zshrc`.
+
+### 4. Téléchargement du modèle vocal (Vosk)
 
 `nerd-dictation` nécessite un modèle Vosk pour fonctionner hors-ligne.
 
@@ -85,7 +103,7 @@ rm vosk-model-small-fr-0.22.zip
 
 ### Lancement direct
 
-Depuis le dossier du projet, avec l'environnement virtuel activé :
+Depuis n'importe quel terminal (après installation via `install.sh`) :
 
 ```bash
 linvoc                # Lancement standard
@@ -94,7 +112,7 @@ linvoc --check        # Vérification des dépendances
 ```
 
 > [!TIP]
-> Si l'environnement n'est pas activé, vous pouvez toujours lancer :
+> Si vous n'avez pas utilisé `install.sh`, vous pouvez lancer depuis le dossier du projet :
 > `./.venv/bin/linvoc` ou `python3 -m src.main`
 
 ### Fonctionnement
@@ -110,7 +128,13 @@ linvoc --check        # Vérification des dépendances
 Pour utiliser `linvoc` comme un vrai outil système (similaire à Win+H), créez un raccourci clavier global dans vos paramètres système (ex: `Super+H`).
 
 ### Commande à utiliser :
-Vous devez pointer directement vers le lanceur dans votre environnement virtuel :
+
+Si vous avez installé via `install.sh`, utilisez simplement :
+```bash
+linvoc --start
+```
+
+Sinon, pointez directement vers le lanceur dans votre environnement virtuel :
 ```bash
 /chemin/complet/vers/linvoc/.venv/bin/linvoc --start
 ```
