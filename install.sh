@@ -62,7 +62,7 @@ fi
 # ── 3. Installer linvoc dans le venv ─────────────────────────
 info "Installation des dépendances Python..."
 "${VENV_PYTHON}" -m pip install --upgrade pip --quiet
-"${VENV_PYTHON}" -m pip install -e "${SCRIPT_DIR}" --quiet
+"${VENV_PYTHON}" -m pip install -e "${SCRIPT_DIR}[whisper]" --quiet
 info "Dépendances installées."
 
 # ── 4. Créer ~/.local/bin si nécessaire ───────────────────────
