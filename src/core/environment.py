@@ -160,6 +160,15 @@ class EnvironmentDetector:
             return False
 
     @staticmethod
+    def has_faster_whisper() -> bool:
+        """Vérifie si faster-whisper est installé."""
+        try:
+            from faster_whisper import WhisperModel  # pylint: disable=import-outside-toplevel,unused-import
+            return True
+        except ImportError:
+            return False
+
+    @staticmethod
     def has_parakeet() -> bool:
         """Vérifie si nemo_toolkit (Parakeet) est disponible."""
         try:
@@ -217,6 +226,7 @@ class EnvironmentDetector:
             "has_ydotool": cls.has_ydotool(),
             "has_nerd_dictation": cls.has_nerd_dictation(),
             "has_whisper": cls.has_whisper(),
+            "has_faster_whisper": cls.has_faster_whisper(),
             "has_parakeet": cls.has_parakeet(),
             "recommended_backend": cls.get_recommended_backend(),
         }

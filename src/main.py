@@ -24,6 +24,7 @@ def print_environment_info():
     print(f"ydotool: {'✓' if info['has_ydotool'] else '✗'}")
     print(f"nerd-dictation (VOSK): {'✓' if info['has_nerd_dictation'] else '✗'}")
     print(f"pywhispercpp (Whisper): {'✓' if info['has_whisper'] else '✗'}")
+    print(f"faster-whisper: {'✓' if info['has_faster_whisper'] else '✗'}")
     print(f"nemo_toolkit (Parakeet): {'✓' if info['has_parakeet'] else '✗'}")
     print(f"Backend recommandé: {info['recommended_backend']}")
     print("============================")
@@ -57,6 +58,20 @@ def check_dependencies(engine: str = "vosk") -> bool:
                 "nemo_toolkit (Parakeet) n'est pas installé.\n"
                 "Installation (GPU recommandé): pip install 'linvoc[parakeet]'\n"
                 "Assurez-vous que PyTorch compatible CUDA est présent."
+            )
+    elif engine == "faster-whisper":
+        if not info['has_faster_whisper']:
+            errors.append(
+                "faster-whisper n'est pas installé.\n"
+                "Installation: pip install 'linvoc[fasterwhisper]'\n"
+                "Ou: pip install faster-whisper"
+            )
+    elif engine == "faster-whisper":
+        if not info['has_faster_whisper']:
+            errors.append(
+                "faster-whisper n'est pas installé.\n"
+                "Installation: pip install 'linvoc[fasterwhisper]'\n"
+                "Ou: pip install faster-whisper"
             )
     else:
         if not info['has_nerd_dictation']:
@@ -137,7 +152,7 @@ Exemples:
 
     parser.add_argument(
         "--engine", "-e",
-        choices=["vosk", "whisper", "parakeet"],
+        choices=["vosk", "whisper", "faster-whisper", "parakeet"],
         default="vosk",
         help="Moteur de reconnaissance vocale (défaut: vosk)"
     )

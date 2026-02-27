@@ -79,6 +79,14 @@ class DictationManager:
                 on_text=on_text,
                 on_state_change=on_state_change,
             )
+        if engine_type == "faster-whisper":
+            from .faster_whisper_engine import FasterWhisperEngine  # pylint: disable=import-outside-toplevel
+            return FasterWhisperEngine(
+                language=language,
+                model_size=model_size,
+                on_text=on_text,
+                on_state_change=on_state_change,
+            )
         if engine_type == "parakeet":
             from .parakeet_engine import ParakeetEngine  # pylint: disable=import-outside-toplevel
 
