@@ -159,6 +159,16 @@ class EnvironmentDetector:
         except ImportError:
             return False
 
+    @staticmethod
+    def has_parakeet() -> bool:
+        """Vérifie si nemo_toolkit (Parakeet) est disponible."""
+        try:
+            import nemo.collections.asr.models  # pylint: disable=import-outside-toplevel,unused-import
+            import torch  # pylint: disable=import-outside-toplevel,unused-import
+            return True
+        except ImportError:
+            return False
+
     @classmethod
     def get_recommended_backend(cls) -> str:
         """
@@ -207,5 +217,6 @@ class EnvironmentDetector:
             "has_ydotool": cls.has_ydotool(),
             "has_nerd_dictation": cls.has_nerd_dictation(),
             "has_whisper": cls.has_whisper(),
+            "has_parakeet": cls.has_parakeet(),
             "recommended_backend": cls.get_recommended_backend(),
         }

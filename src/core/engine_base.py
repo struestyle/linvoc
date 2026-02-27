@@ -9,6 +9,7 @@ class EngineType(Enum):
     """Types de moteurs de reconnaissance vocale disponibles."""
     VOSK = "vosk"
     WHISPER = "whisper"
+    PARAKEET = "parakeet"
 
 
 class DictationState(Enum):

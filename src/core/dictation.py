@@ -19,6 +19,7 @@ class DictationManager:
         language: str = "fr",
         model_dir: Optional[str] = None,
         model_size: str = "base",
+        parakeet_model: Optional[str] = None,
         on_text: Optional[Callable[[str], None]] = None,
         on_state_change: Optional[Callable[[DictationState], None]] = None,
     ):
@@ -35,11 +36,13 @@ class DictationManager:
         """
         self._engine_type_str = engine_type
         self.on_state_change = on_state_change
+        self._parakeet_model = parakeet_model
         self._engine = self._create_engine(
             engine_type=engine_type,
             language=language,
             model_dir=model_dir,
             model_size=model_size,
+            parakeet_model=parakeet_model,
             on_text=on_text,
             on_state_change=on_state_change,
         )
@@ -50,6 +53,7 @@ class DictationManager:
         language: str,
         model_dir: Optional[str],
         model_size: str,
+        parakeet_model: Optional[str],
         on_text: Optional[Callable[[str], None]],
         on_state_change: Optional[Callable[[DictationState], None]],
     ) -> SpeechEngine:
@@ -72,6 +76,16 @@ class DictationManager:
             return WhisperEngine(
                 language=language,
                 model_size=model_size,
+                on_text=on_text,
+                on_state_change=on_state_change,
+            )
+        if engine_type == "parakeet":
+            from .parakeet_engine import ParakeetEngine  # pylint: disable=import-outside-toplevel
+
+            return ParakeetEngine(
+                language=language,
+                model_size=model_size,
+                model_name=parakeet_model,
                 on_text=on_text,
                 on_state_change=on_state_change,
             )
@@ -98,6 +112,14 @@ class DictationManager:
     def engine_type_name(self) -> str:
         """Nom du type de moteur (pour affichage)."""
         return self._engine.engine_type.value.upper()
+
+    @property
+    def model_name(self) -> str:
+        """Nom du modèle Parakeet/Whisper utilisé si disponible."""
+        engine = self._engine
+        if hasattr(engine, "model_name"):
+            return getattr(engine, "model_name")
+        return self.engine_type_name
 
     def is_model_available(self) -> bool:
         """Vérifie si le modèle vocal est disponible."""

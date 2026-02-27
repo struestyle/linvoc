@@ -5,38 +5,44 @@ import signal
 import tempfile
 from pathlib import Path
 
-LOCK_FILE = Path(tempfile.gettempdir()) / "linvoc.lock"
+DEFAULT_SCOPE = "linvoc"
 
 
-def get_running_pid() -> int | None:
+def _lock_file(scope: str) -> Path:
+    safe_scope = scope.replace(os.sep, "_")
+    return Path(tempfile.gettempdir()) / f"{safe_scope}.lock"
+
+
+def get_running_pid(scope: str = DEFAULT_SCOPE) -> int | None:
     """
     Retourne le PID de l'instance en cours si elle existe.
 
     Returns:
         int | None: PID si une instance est en cours, None sinon
     """
-    if not LOCK_FILE.exists():
+    lock_file = _lock_file(scope)
+    if not lock_file.exists():
         return None
 
     try:
-        pid = int(LOCK_FILE.read_text().strip())
+        pid = int(lock_file.read_text().strip())
         # Vérifie si le processus existe toujours
         os.kill(pid, 0)
         return pid
     except (ValueError, ProcessLookupError, PermissionError):
         # PID invalide ou processus mort
-        LOCK_FILE.unlink(missing_ok=True)
+        lock_file.unlink(missing_ok=True)
         return None
 
 
-def create_lock():
+def create_lock(scope: str = DEFAULT_SCOPE):
     """Crée le fichier lock avec le PID actuel."""
-    LOCK_FILE.write_text(str(os.getpid()))
+    _lock_file(scope).write_text(str(os.getpid()))
 
 
-def remove_lock():
+def remove_lock(scope: str = DEFAULT_SCOPE):
     """Supprime le fichier lock."""
-    LOCK_FILE.unlink(missing_ok=True)
+    _lock_file(scope).unlink(missing_ok=True)
 
 
 def send_toggle_signal(pid: int) -> bool:

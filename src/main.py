@@ -24,6 +24,7 @@ def print_environment_info():
     print(f"ydotool: {'✓' if info['has_ydotool'] else '✗'}")
     print(f"nerd-dictation (VOSK): {'✓' if info['has_nerd_dictation'] else '✗'}")
     print(f"pywhispercpp (Whisper): {'✓' if info['has_whisper'] else '✗'}")
+    print(f"nemo_toolkit (Parakeet): {'✓' if info['has_parakeet'] else '✗'}")
     print(f"Backend recommandé: {info['recommended_backend']}")
     print("============================")
 
@@ -48,7 +49,14 @@ def check_dependencies(engine: str = "vosk") -> bool:
             errors.append(
                 "pywhispercpp n'est pas installé.\n"
                 "Installation: pip install pywhispercpp PyAudio\n"
-                "Ou: pip install linvoc[whisper]"
+                "Ou réinstallez linvoc: pip install -e ."
+            )
+    elif engine == "parakeet":
+        if not info["has_parakeet"]:
+            errors.append(
+                "nemo_toolkit (Parakeet) n'est pas installé.\n"
+                "Installation (GPU recommandé): pip install 'linvoc[parakeet]'\n"
+                "Assurez-vous que PyTorch compatible CUDA est présent."
             )
     else:
         if not info['has_nerd_dictation']:
@@ -93,6 +101,9 @@ def main():
 Exemples:
   linvoc                    Lancer l'application (moteur VOSK)
   linvoc --engine whisper   Utiliser Whisper comme moteur
+  linvoc --engine parakeet  Utiliser Parakeet (NVIDIA NeMo)
+  linvoc --daemon --engine parakeet  Démarrer Parakeet en tâche de fond
+  linvoc --toggle            Basculer une instance déjà ouverte
   linvoc --info             Afficher les infos d'environnement
   linvoc --check            Vérifier les dépendances
   linvoc --lang en          Utiliser l'anglais
@@ -126,7 +137,7 @@ Exemples:
 
     parser.add_argument(
         "--engine", "-e",
-        choices=["vosk", "whisper"],
+        choices=["vosk", "whisper", "parakeet"],
         default="vosk",
         help="Moteur de reconnaissance vocale (défaut: vosk)"
     )
@@ -136,6 +147,36 @@ Exemples:
         choices=["tiny", "base", "small", "medium", "large"],
         default="base",
         help="Taille du modèle Whisper (défaut: base)"
+    )
+
+    parser.add_argument(
+        "--parakeet-model",
+        default="nvidia/parakeet-tdt-0.6b-v3",
+        help="Nom du modèle pré-entraîné Parakeet (défaut: nvidia/parakeet-tdt-0.6b-v3)"
+    )
+
+    parser.add_argument(
+        "--daemon",
+        action="store_true",
+        help="Démarrer linvoc en mode service persistant (ne se ferme pas dès qu'une instance existe)"
+    )
+
+    parser.add_argument(
+        "--toggle",
+        action="store_true",
+        help="Basculer enregistrement/arrêt sur l'instance déjà en cours"
+    )
+
+    parser.add_argument(
+        "--daemon-ui",
+        action="store_true",
+        help="Afficher l'UI en mode daemon (sinon cachée)"
+    )
+
+    parser.add_argument(
+        "--force-preload",
+        action="store_true",
+        help="Charge le moteur immédiatement au lancement (utile pour daemon)"
     )
 
     parser.add_argument(
@@ -151,6 +192,31 @@ Exemples:
     )
 
     args = parser.parse_args()
+
+    from .core.single_instance import get_running_pid, send_toggle_signal
+
+    DEFAULT_SCOPE = "linvoc"
+    DAEMON_SCOPE = "linvoc-daemon"
+    lock_scope = DAEMON_SCOPE if args.daemon else DEFAULT_SCOPE
+    show_window = True
+    auto_hide = False
+    preload_only = False
+
+    if args.daemon and not args.daemon_ui:
+        show_window = False
+        auto_hide = True
+        if not args.start and args.force_preload:
+            preload_only = True
+
+    if args.toggle:
+        existing_pid = get_running_pid(scope=DAEMON_SCOPE)
+        if not existing_pid:
+            print("Aucune instance linvoc n'est en cours d'exécution.")
+            return 1
+        if send_toggle_signal(existing_pid):
+            return 0
+        print("Impossible d'envoyer le signal au processus existant.")
+        return 1
 
     # Mode info
     if args.info:
@@ -172,10 +238,13 @@ Exemples:
         return 1
 
     # Vérifier si une instance est déjà en cours
-    from .core.single_instance import get_running_pid, send_toggle_signal
-    existing_pid = get_running_pid()
+    existing_pid = get_running_pid(scope=lock_scope)
 
     if existing_pid:
+        if args.daemon:
+            print("Une instance linvoc tourne déjà (PID {}).".format(existing_pid))
+            print("Utilisez --toggle pour démarrer/arrêter l'écoute.")
+            return 0
         # Instance existante : envoyer le signal toggle
         if send_toggle_signal(existing_pid):
             return 0
@@ -183,10 +252,15 @@ Exemples:
 
     # Lancer l'application avec le moteur choisi
     app = LinvocApplication(
-        start_immediately=True,
+        start_immediately=args.start,
+        preload_only=preload_only,
         engine_type=args.engine,
         language=args.lang,
         model_size=args.model_size,
+        parakeet_model=args.parakeet_model,
+        lock_scope=lock_scope,
+        show_window=show_window,
+        auto_hide=auto_hide,
     )
     return app.run()
 

@@ -19,6 +19,8 @@ error() { echo -e "${RED}✗${NC} $*" >&2; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_DIR="${HOME}/.local/bin"
 VENV_DIR="${SCRIPT_DIR}/.venv"
+AUTOSTART_DIR="${HOME}/.config/autostart"
+AUTOSTART_FILE="${AUTOSTART_DIR}/linvoc-parakeet-daemon.desktop"
 
 echo -e "${BOLD}🎤 Installation de linvoc${NC}"
 echo "   Projet : ${SCRIPT_DIR}"
@@ -78,7 +80,22 @@ WRAPPER
 chmod +x "${INSTALL_DIR}/linvoc"
 info "Wrapper installé dans ${INSTALL_DIR}/linvoc"
 
-# ── 6. Vérifier que ~/.local/bin est dans le PATH ─────────────
+# ── 6. Créer un service de démarrage automatique pour Parakeet ─
+mkdir -p "${AUTOSTART_DIR}"
+cat > "${AUTOSTART_FILE}" << DESKTOP
+[Desktop Entry]
+Type=Application
+Name=linvoc (Parakeet Daemon)
+Comment=Précharge Parakeet et attend les commandes linvoc --toggle
+Exec=env CUDA_VISIBLE_DEVICES="" ${INSTALL_DIR}/linvoc --engine parakeet --parakeet-model nvidia/parakeet-tdt-0.6b-v3 --daemon --force-preload
+Terminal=false
+X-GNOME-Autostart-enabled=true
+X-KDE-autostart-after=panel
+Categories=Utility;
+DESKTOP
+info "Autostart configuré : ${AUTOSTART_FILE}"
+
+# ── 7. Vérifier que ~/.local/bin est dans le PATH ─────────────
 if ! echo "${PATH}" | tr ':' '\n' | grep -q "${INSTALL_DIR}"; then
     warn "${INSTALL_DIR} n'est pas dans votre PATH."
     echo ""
@@ -91,7 +108,7 @@ else
     info "${INSTALL_DIR} est déjà dans le PATH."
 fi
 
-# ── 7. Vérification rapide ────────────────────────────────────
+# ── 8. Vérification rapide ────────────────────────────────────
 echo ""
 if "${VENV_PYTHON}" -c "from src.main import main; print('ok')" &>/dev/null; then
     info "Installation réussie ! Lancez ${BOLD}linvoc${NC} depuis n'importe où."
