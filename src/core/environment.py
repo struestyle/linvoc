@@ -124,6 +124,9 @@ class EnvironmentDetector:
         Returns:
             bool: True si le portail est disponible
         """
+        if os.environ.get("LINVOC_SKIP_PORTAL_CHECK") == "1":
+            return False
+
         try:
             import dbus
             bus = dbus.SessionBus()

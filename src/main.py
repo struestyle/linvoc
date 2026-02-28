@@ -9,7 +9,7 @@ import sys
 import argparse
 
 from .core.environment import EnvironmentDetector
-from .gui.main_window import LinvocApplication
+# from .gui.main_window import LinvocApplication  # Importé localement pour éviter les hangs en mode CLI
 
 
 def print_environment_info():
@@ -266,6 +266,7 @@ Exemples:
         # Si échec, continuer et lancer une nouvelle instance
 
     # Lancer l'application avec le moteur choisi
+    from .gui.main_window import LinvocApplication
     app = LinvocApplication(
         start_immediately=args.start,
         preload_only=preload_only,

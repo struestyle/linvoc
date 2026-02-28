@@ -27,6 +27,7 @@ class MicrophoneWidget(QWidget):
     # Signaux
     recording_started = Signal()
     recording_stopped = Signal(str)
+    text_captured = Signal(str)
     error_occurred = Signal(str)
 
     def __init__(
@@ -36,12 +37,14 @@ class MicrophoneWidget(QWidget):
         language: str = "fr",
         model_size: str = "base",
         parakeet_model: Optional[str] = None,
+        is_daemon: bool = False,
     ):
         super().__init__(parent)
         self._engine_type = engine_type
         self._language = language
         self._model_size = model_size
         self._parakeet_model = parakeet_model
+        self._is_daemon = is_daemon
 
         self._setup_window()
         self._setup_ui()
@@ -151,6 +154,7 @@ class MicrophoneWidget(QWidget):
             language=self._language,
             model_size=self._model_size,
             parakeet_model=self._parakeet_model,
+            on_text=self.text_captured.emit,
             on_state_change=self._on_dictation_state_change,
         )
         try:
@@ -200,9 +204,9 @@ class MicrophoneWidget(QWidget):
                 self._icon_label, "microphone", QColor(colors['text']), 40
             )
 
+        # On ne garde que le nom du moteur pour l'UI (minimalisme)
         model_description = engine_name
-        if hasattr(self._dictation, "model_name"):
-            model_description = f"{engine_name} ({self._dictation.model_name})"
+
         self._current_model_text = model_description
         self._set_model_label(model_description)
 
@@ -317,10 +321,15 @@ class MicrophoneWidget(QWidget):
                 self.error_occurred.emit(f"Erreur {engine_name}")
 
     def closeEvent(self, event):
-        """Arrête proprement la dictée et les threads à la fermeture."""
+        """Arrête la dictée. Cache ou quitte selon le mode."""
         self._dictation.stop()
-        event.accept()
-        QApplication.quit()
+        if self._is_daemon:
+            self.hide()
+            event.ignore()
+        else:
+            event.accept()
+            # On ne force pas QApplication.quit() ici, 
+            # LinvocApplication gère le cycle de vie.
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:
@@ -344,7 +353,7 @@ class LinvocApplication:
     ):
         app = QApplication.instance() or QApplication(sys.argv)
         self._app = cast(QApplication, app)
-        self._app.setQuitOnLastWindowClosed(True)
+        self._app.setQuitOnLastWindowClosed(False)
         self._lock_scope = lock_scope
         self._show_window = show_window
         self._auto_hide = auto_hide
@@ -355,6 +364,7 @@ class LinvocApplication:
             language=language,
             model_size=model_size,
             parakeet_model=parakeet_model,
+            is_daemon=(not show_window or auto_hide),
         )
 
         # Créer le fichier lock
@@ -363,6 +373,8 @@ class LinvocApplication:
         self._remove_lock = lambda: remove_lock(scope=self._lock_scope)
 
         self._widget.recording_stopped.connect(self._on_recording_stopped)
+        self._widget.text_captured.connect(self._on_text_captured)
+        self._widget.error_occurred.connect(self._on_error)
 
         # Gestion propre de Ctrl+C et signaux
         signal.signal(signal.SIGINT, self.quit)
@@ -425,11 +437,15 @@ class LinvocApplication:
 
 
     def _on_recording_stopped(self, text: str):
-        """Callback quand l'enregistrement est terminé."""
+        """Callback quand l'enregistrement est terminé (transition d'état)."""
         if not self._widget.isVisible():
             self._widget.show()
         self._widget.raise_()
-        print(f"Texte capturé: {text}")
+
+    def _on_text_captured(self, text: str):
+        """Callback quand du texte a été transcrit."""
+        if text.strip():
+            print(f"Texte capturé: {text}")
 
     def _on_error(self, message: str):
         """Callback en cas d'erreur."""

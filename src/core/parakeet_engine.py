@@ -3,13 +3,43 @@
 from __future__ import annotations
 
 import os
+os.environ["NEMO_LOGGING_LEVEL"] = "ERROR"
+os.environ["HYDRA_FULL_ERROR"] = "0"
+os.environ["PYTHONWARNINGS"] = "ignore"
+import sys
 import tempfile
 import threading
 import wave
+import contextlib
+import logging
 from typing import Any, Callable, Iterable, Optional, TYPE_CHECKING, cast
 
 from .engine_base import DictationState, EngineType, SpeechEngine
 from .text_injector import TextInjector, TextInjectorBackend
+
+@contextlib.contextmanager
+def suppress_stdout_stderr():
+    """Redirige stdout et stderr vers devnull au niveau des descripteurs de fichiers (pour ALSA/Jack)."""
+    # Sauvegarde des FDs originaux
+    stdout_fd = sys.stdout.fileno()
+    stderr_fd = sys.stderr.fileno()
+    
+    with os.fdopen(os.dup(stdout_fd), 'w') as old_stdout, \
+         os.fdopen(os.dup(stderr_fd), 'w') as old_stderr:
+        
+        with open(os.devnull, 'w') as devnull:
+            # Redirection au niveau OS (FD 1 et 2)
+            os.dup2(devnull.fileno(), stdout_fd)
+            os.dup2(devnull.fileno(), stderr_fd)
+            
+            try:
+                yield
+            finally:
+                # Restauration des FDs originaux
+                sys.stdout.flush()
+                sys.stderr.flush()
+                os.dup2(old_stdout.fileno(), stdout_fd)
+                os.dup2(old_stderr.fileno(), stderr_fd)
 
 if TYPE_CHECKING:  # pragma: no cover - uniquement pour hints
     from nemo.collections.asr.models import ASRModel
@@ -80,24 +110,46 @@ class ParakeetEngine(SpeechEngine):
         if self._model is not None:
             return True
 
+        model_name = self._resolve_model_name()
+        self.model_name = model_name
+        device = self._resolve_device()
+
         try:
             from nemo.collections.asr.models import ASRModel  # pylint: disable=import-outside-toplevel
+            from nemo.utils import logging as nemo_logging
+            nemo_logging.set_verbosity(nemo_logging.ERROR)
 
-            model_name = self._resolve_model_name()
-            self.model_name = model_name
-            device = self._resolve_device()
-
-            self._model = cast(
-                "ASRModel",
-                ASRModel.from_pretrained(  # type: ignore[arg-type]
-                    model_name,
-                    map_location=device,
-                ),
-            )
+            with suppress_stdout_stderr():
+                self._model = cast(
+                    "ASRModel",
+                    ASRModel.from_pretrained(  # type: ignore[arg-type]
+                        model_name,
+                        map_location=device,
+                    ),
+                )
             self._configure_language()
             self._model.eval()
             return True
         except Exception as exc:  # pylint: disable=broad-except
+            # Fallback en cas d'erreur CUDA (ex: no kernel image)
+            if "cuda" in str(device).lower() or "cuda" in str(exc).lower():
+                print(f"AVERTISSEMENT: Échec CUDA ({exc}). Tentative de repli sur CPU...")
+                try:
+                    from nemo.collections.asr.models import ASRModel  # pylint: disable=import-outside-toplevel
+                    with suppress_stdout_stderr():
+                        self._model = cast(
+                            "ASRModel",
+                            ASRModel.from_pretrained(
+                                model_name,
+                                map_location="cpu",
+                            ),
+                        )
+                    self._configure_language()
+                    self._model.eval()
+                    return True
+                except Exception as retry_exc:
+                    print(f"ERREUR Repli CPU Parakeet: {retry_exc}")
+            
             print(f"ERREUR Chargement Parakeet: {exc}")
             self._model = None
             return False
@@ -166,22 +218,21 @@ class ParakeetEngine(SpeechEngine):
             self._recording = False
             return
 
-        audio = pyaudio.PyAudio()
-
-        try:
-            stream = audio.open(
-                format=pyaudio.paInt16,
-                channels=1,
-                rate=self.SAMPLE_RATE,
-                input=True,
-                frames_per_buffer=self.CHUNK_SIZE,
-            )
-        except OSError as exc:
-            print(f"ERREUR Microphone: {exc}")
-            audio.terminate()
-            self.state = DictationState.ERROR
-            self._recording = False
-            return
+        with suppress_stdout_stderr():
+            try:
+                audio = pyaudio.PyAudio()
+                stream = audio.open(
+                    format=pyaudio.paInt16,
+                    channels=1,
+                    rate=self.SAMPLE_RATE,
+                    input=True,
+                    frames_per_buffer=self.CHUNK_SIZE,
+                )
+            except (ImportError, OSError) as exc:
+                print(f"ERREUR Microphone/Audio: {exc}")
+                self.state = DictationState.ERROR
+                self._recording = False
+                return
 
         try:
             while self._recording:
@@ -209,10 +260,18 @@ class ParakeetEngine(SpeechEngine):
                 wav_file.writeframes(b"".join(frames))
 
             try:
-                segments = model.transcribe(  # type: ignore[call-arg]
-                    [temp_file.name],
-                    batch_size=1,
-                )
+                from nemo.utils import logging as nemo_logging
+                nemo_logging.set_verbosity(nemo_logging.ERROR)
+            except ImportError:
+                pass
+
+            try:
+                with suppress_stdout_stderr():
+                    segments = model.transcribe(  # type: ignore[call-arg]
+                        [temp_file.name],
+                        batch_size=1,
+                        verbose=False,
+                    )
             except Exception as exc:  # pylint: disable=broad-except
                 print(f"ERREUR Transcription Parakeet: {exc}")
                 return
